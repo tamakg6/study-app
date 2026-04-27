@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>chaT</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <div id="auth-overlay">
@@ -19,11 +19,8 @@
     </div>
 
     <div id="app" style="display: none;">
-        <div id="mobile-header">
-            <button onclick="toggleSidebar()">☰</button>
-            <span id="mobile-channel-name"># general</span>
-        </div>
-
+        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+        
         <aside id="sidebar">
             <div class="server-name">chaT</div>
             <div class="sidebar-scroll">
@@ -40,15 +37,16 @@
             </div>
         </aside>
 
-        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
-
         <main id="chat-container">
-            <header id="chat-header">
-                <span id="current-channel-name"># general</span>
+            <header id="main-header">
+                <button id="menu-btn" onclick="toggleSidebar()">☰</button>
+                <span id="display-channel-name"># general</span>
             </header>
+
             <div id="messages"></div>
+
             <div id="input-area">
-                <input type="text" id="message-input" placeholder="メッセージを送信...">
+                <input type="text" id="message-input" placeholder="メッセージを送信..." autocomplete="off">
             </div>
         </main>
     </div>
