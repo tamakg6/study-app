@@ -3,6 +3,7 @@ let currentUser = JSON.parse(localStorage.getItem('chaT_user')) || null;
 let currentChannelId = "general";
 let lastMsgCounts = {}; // 各チャンネルの既知のメッセージ数を保存
 let unreadChannels = new Set(); 
+let isSignUp = false; // ← これが重要！
 
 function toggleSidebar() { document.getElementById('app').classList.toggle('sidebar-open'); }
 
