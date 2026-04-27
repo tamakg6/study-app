@@ -1,22 +1,10 @@
-:root {
-    --primary: #4a90e2;
-    --border: #eee;
-    --header-h: 60px;
-    --announcement-bg: #fffbe6; /* お知らせ用の薄い黄色 */
-}
-
+:root { --primary: #4a90e2; --border: #eee; --header-h: 60px; --announcement-bg: #fffbe6; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body, html { height: 100%; width: 100%; overflow: hidden; font-family: -apple-system, sans-serif; background: #fff; }
-
 #app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
 /* サイドバー */
-#sidebar {
-    width: 260px; height: 100%; background: #f8f9fa;
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; flex-shrink: 0;
-    transition: transform 0.3s ease; z-index: 2000;
-}
+#sidebar { width: 260px; height: 100%; background: #f8f9fa; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 2000; }
 .server-name { padding: 20px; font-weight: bold; color: var(--primary); font-size: 1.2rem; border-bottom: 1px solid var(--border); }
 .sidebar-scroll { flex: 1; overflow-y: auto; }
 .sidebar-section { padding: 15px 15px 5px; font-size: 0.7rem; color: #888; font-weight: bold; text-transform: uppercase; }
@@ -24,31 +12,22 @@ body, html { height: 100%; width: 100%; overflow: hidden; font-family: -apple-sy
 #official-list li, #channel-list li, #user-list li { padding: 10px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; }
 #official-list li:hover, #channel-list li:hover, #user-list li:hover { background: #eef2f7; }
 
-/* メインチャットエリア */
+/* メインエリア */
 #chat-container { flex: 1; display: flex; flex-direction: column; height: 100%; min-width: 0; position: relative; background: white; }
-
-/* お知らせモードの背景変更 */
 #chat-container.mode-announcement #messages { background-color: var(--announcement-bg); }
-
-#main-header {
-    height: var(--header-h); display: flex; align-items: center; padding: 0 15px;
-    border-bottom: 1px solid var(--border); background: #fff; flex-shrink: 0;
-}
-#menu-btn { font-size: 24px; background: none; border: none; margin-right: 15px; cursor: pointer; color: #555; }
+#main-header { height: var(--header-h); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+#menu-btn { font-size: 24px; background: none; border: none; margin-right: 15px; cursor: pointer; }
 #display-channel-name { font-weight: bold; font-size: 1.1rem; }
 
-#messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+#messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
 .msg-item { display: flex; flex-direction: column; align-items: flex-start; }
 .msg-user { font-size: 0.75rem; font-weight: bold; color: var(--primary); margin-bottom: 2px; }
 .msg-content { background: #f1f3f4; padding: 10px 15px; border-radius: 18px; line-height: 1.4; word-break: break-all; max-width: 85%; border: 1px solid transparent; }
+#chat-container.mode-announcement .msg-content { border-color: #ffe58f; background: white; }
 
-/* お知らせメッセージを強調 */
-#chat-container.mode-announcement .msg-content { border-color: #ffe58f; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-#input-area { padding: 10px 15px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+#input-area { padding: 10px 15px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; display: flex; align-items: center; }
 #message-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: #f1f3f4; font-size: 16px; outline: none; }
 
-/* スマホ対応 */
 @media (max-width: 768px) {
     #sidebar { position: fixed; transform: translateX(-100%); }
     #app.sidebar-open #sidebar { transform: translateX(0); }
@@ -56,7 +35,6 @@ body, html { height: 100%; width: 100%; overflow: hidden; font-family: -apple-sy
     #app.sidebar-open #sidebar-overlay { display: block; }
 }
 
-/* 認証画面 */
 #auth-overlay { position: fixed; inset: 0; background: #f0f2f5; display: flex; justify-content: center; align-items: center; z-index: 3000; padding: 20px; }
 .auth-card { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
 #user-info-area { padding: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
