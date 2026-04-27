@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="chaT">
     <link rel="apple-touch-icon" href="icon.png">
-    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
     <div id="auth-overlay">
@@ -51,11 +51,12 @@
             </header>
             <div id="messages"></div>
             <div id="input-area">
-                <input type="text" id="message-input" placeholder="メッセージを送信..." autocomplete="off">
+                <textarea id="message-input" placeholder="メッセージを送信..." rows="1"></textarea>
+                <button id="send-btn" onclick="sendMessage()">➤</button>
             </div>
         </main>
     </div>
     <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=25"></script>
 </body>
 </html>
