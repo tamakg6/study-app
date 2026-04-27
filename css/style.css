@@ -1,69 +1,55 @@
-body {
-    font-family: sans-serif;
-    background-color: #f4f7f6;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
+/* 全体の設定 */
+body, html {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #ffffff; color: #333;
 }
 
-header {
-    background: #2c3e50;
-    color: white;
-    width: 100%;
-    text-align: center;
-    padding: 1rem 0;
+#app { display: flex; height: 100vh; }
+
+/* サイドバー：淡いグレーで清潔感を */
+#sidebar {
+    width: 260px; background-color: #f5f7fb;
+    display: flex; flex-direction: column;
+    border-right: 1px solid #e1e4e8;
 }
 
-main {
-    width: 90%;
-    max-width: 500px;
-    margin-top: 20px;
+.server-name {
+    padding: 20px; font-weight: 800; border-bottom: 1px solid #e1e4e8;
+    color: #4a90e2; text-align: center; font-size: 1.4rem;
+    letter-spacing: 1px;
 }
 
-.input-area {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+#channel-list { list-style: none; padding: 15px; margin: 0; }
+#channel-list li {
+    padding: 12px 15px; margin-bottom: 5px; border-radius: 10px;
+    cursor: pointer; transition: all 0.2s ease;
+    color: #5f6368; font-weight: 500;
 }
 
-input, button {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+/* ホバー時は明るい青背景 */
+#channel-list li:hover {
+    background-color: #e8f0fe; color: #1a73e8;
 }
 
-button {
-    background-color: #27ae60;
-    color: white;
-    border: none;
-    cursor: pointer;
+/* メインチャットエリア */
+#chat-container { flex: 1; display: flex; flex-direction: column; background-color: #fff; }
+
+#chat-header {
+    height: 60px; padding: 0 25px; display: flex; align-items: center;
+    background-color: #fff; border-bottom: 1px solid #e1e4e8;
+    font-weight: bold; color: #202124; font-size: 1.1rem;
 }
 
-button:hover {
-    background-color: #219150;
+#messages { 
+    flex: 1; padding: 25px; overflow-y: auto; 
+    background-image: radial-gradient(#f0f0f0 1px, transparent 1px);
+    background-size: 20px 20px; /* うっすらドット模様でオシャレに */
 }
 
-.list-area {
-    margin-top: 30px;
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-}
-
-li {
-    background: white;
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 5px solid #27ae60;
-    display: flex;
-    justify-content: space-between;
-}
+/* 入力エリア：浮いているようなデザイン */
+#input-area { padding: 20px 30px; background-color: #fff; }
+#message-input {
+    width: 100%; padding: 15px 20px; border-radius: 25px; 
+    border: 2px solid #f1f3f4; background-color: #f1f3f4;
+    color: #3cs
