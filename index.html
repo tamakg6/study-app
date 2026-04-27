@@ -2,15 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>chaT - 会員制チャット</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>chaT</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="auth-overlay">
         <div class="auth-card">
             <h2 id="auth-title">chaT にログイン</h2>
-            <input type="text" id="auth-displayname" placeholder="表示名（登録時のみ）" style="display:none;">
+            <input type="text" id="auth-displayname" placeholder="表示名" style="display:none;">
             <input type="text" id="auth-userid" placeholder="ユーザーID">
             <input type="password" id="auth-password" placeholder="パスワード">
             <button onclick="handleAuth()" id="auth-btn">ログイン</button>
@@ -19,19 +19,28 @@
     </div>
 
     <div id="app" style="display: none;">
+        <div id="mobile-header">
+            <button onclick="toggleSidebar()">☰</button>
+            <span id="mobile-channel-name"># general</span>
+        </div>
+
         <aside id="sidebar">
             <div class="server-name">chaT</div>
-            <div class="sidebar-section">チャンネル</div>
-            <ul id="channel-list">
-                <li onclick="selectChannel('general')"># general</li>
-            </ul>
-            <div class="sidebar-section">ダイレクトメッセージ</div>
-            <ul id="user-list"></ul>
+            <div class="sidebar-scroll">
+                <div class="sidebar-section">チャンネル</div>
+                <ul id="channel-list">
+                    <li onclick="selectChannel('general')"># general</li>
+                </ul>
+                <div class="sidebar-section">ダイレクトメッセージ</div>
+                <ul id="user-list"></ul>
+            </div>
             <div id="user-info-area">
                 <span id="user-display-name"></span>
                 <button onclick="logout()">ログアウト</button>
             </div>
         </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <main id="chat-container">
             <header id="chat-header">
