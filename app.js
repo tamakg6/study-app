@@ -1,14 +1,15 @@
-const API_URL = "https://cha-t.tama-kg-6.workers.dev"; // 自分のURLに
+const API_URL = "https://cha-t.tama-kg-6.workers.dev"; 
 let currentUser = JSON.parse(localStorage.getItem('chaT_user')) || null;
 let currentChannelId = "general";
 let isSignUp = false;
+let lastMessageCount = 0;
 
 function toggleSidebar() { document.getElementById('app').classList.toggle('sidebar-open'); }
 
 function toggleAuthMode() {
     isSignUp = !isSignUp;
     document.getElementById('auth-title').textContent = isSignUp ? "chaT に新規登録" : "chaT にログイン";
-    document.getElementById('auth-btn').textContent = isSignUp ? "登録する" : "ログイン";
+    document.getElementById('auth-btn').textContent = isSignUp ? "登録する" : "はじめる";
     document.getElementById('auth-displayname').style.display = isSignUp ? "block" : "none";
 }
 
@@ -17,6 +18,7 @@ async function handleAuth() {
     const password = document.getElementById('auth-password').value;
     const display_name = document.getElementById('auth-displayname').value;
     if(!user_id || !password) return alert("入力してください");
+
     const endpoint = isSignUp ? "/register" : "/login";
     try {
         const res = await fetch(`${API_URL}${endpoint}`, {
@@ -27,7 +29,14 @@ async function handleAuth() {
         const data = await res.json();
         if (res.ok) {
             if (isSignUp) { alert("登録完了！ログインしてください。"); toggleAuthMode(); }
-            else { currentUser = data.user; localStorage.setItem('chaT_user', JSON.stringify(currentUser)); showApp(); }
+            else { 
+                currentUser = data.user; 
+                localStorage.setItem('chaT_user', JSON.stringify(currentUser)); 
+                // iPhone通知音の解放（クリックイベント内で再生が必要なため）
+                const audio = document.getElementById('notification-sound');
+                audio.play().then(() => audio.pause()); 
+                showApp(); 
+            }
         } else { alert(data.error); }
     } catch (e) { alert("通信エラー"); }
 }
@@ -36,6 +45,9 @@ function showApp() {
     document.getElementById('auth-overlay').style.display = "none";
     document.getElementById('app').style.display = "flex";
     document.getElementById('user-display-name').textContent = currentUser.display_name;
+    
+    if ("Notification" in window) Notification.requestPermission();
+
     loadUserList();
     loadMessages();
     if(!window.chatInterval) window.chatInterval = setInterval(loadMessages, 3000);
@@ -56,6 +68,7 @@ function startDM(targetId, targetName) {
     currentChannelId = `dm_${ids[0]}_${ids[1]}`;
     updateHeader(`${targetName} とのDM`, false);
     if(window.innerWidth <= 768) toggleSidebar();
+    lastMessageCount = 0; // チャンネル移動でカウントリセット
     loadMessages();
 }
 
@@ -64,6 +77,7 @@ function selectChannel(id) {
     const isAnnounce = (id === 'announcement');
     updateHeader(isAnnounce ? "📢 お知らせ" : `# ${id}`, isAnnounce);
     if(window.innerWidth <= 768) toggleSidebar();
+    lastMessageCount = 0;
     loadMessages();
 }
 
@@ -71,10 +85,8 @@ function updateHeader(title, isAnnounce) {
     document.getElementById('display-channel-name').textContent = title;
     const container = document.getElementById('chat-container');
     const inputArea = document.getElementById('input-area');
-
     if (isAnnounce) {
         container.classList.add('mode-announcement');
-        // 管理者(admin)以外はお知らせで入力できないようにする
         inputArea.style.display = (currentUser.user_id === 'admin') ? 'flex' : 'none';
     } else {
         container.classList.remove('mode-announcement');
@@ -87,6 +99,19 @@ async function loadMessages() {
         const res = await fetch(`${API_URL}/messages?channel=${currentChannelId}`);
         const data = await res.json();
         const msgDiv = document.getElementById('messages');
+        
+        // 通知判定
+        if (data.length > lastMessageCount && lastMessageCount !== 0) {
+            const newMsg = data[data.length - 1];
+            if (newMsg.sender_id !== currentUser.user_id) {
+                document.getElementById('notification-sound').play().catch(()=>{});
+                if (Notification.permission === "granted") {
+                    new Notification(`chaT: ${newMsg.display_name || newMsg.sender_id}`, { body: newMsg.content, icon: "icon.png" });
+                }
+            }
+        }
+        lastMessageCount = data.length;
+
         const isBottom = msgDiv.scrollHeight - msgDiv.scrollTop <= msgDiv.clientHeight + 100;
         msgDiv.innerHTML = data.map(m => `
             <div class="msg-item">
