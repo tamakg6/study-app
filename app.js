@@ -71,18 +71,28 @@ function checkMaintenance(status) {
 
 // メンテナンス切替 (admin専用)
 async function toggleMaintenanceMode() {
-    const isCurrentlyOn = document.getElementById('maintenance-overlay').style.display === 'flex';
-    const newState = !isCurrentlyOn;
-    if(!confirm(`メンテナンスモードを ${newState ? 'ON' : 'OFF'} にしますか？`)) return;
+    // ボタンを押したときに選択肢を出す
+    const choice = confirm("メンテナンスを【開始】しますか？\n（[キャンセル] を押すとメンテナンスを【解除】します）");
+    const val = choice ? "true" : "false"; // OKなら開始、キャンセルなら解除
 
     try {
         const res = await fetch(`${API_URL}/admin/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: 'maintenance_mode', value: newState.toString(), user_id: 'admin' })
+            body: JSON.stringify({ 
+                key: 'maintenance_mode', 
+                value: val, 
+                user_id: currentUser.user_id 
+            })
         });
-        if(res.ok) alert(`メンテナンスを ${newState ? '開始' : '解除'} しました。`);
-    } catch(e) { alert("切替に失敗しました。Workers側を確認してください。"); }
+        
+        if(res.ok) {
+            alert(`メンテナンスを ${val === "true" ? 'ON' : 'OFF'} にしました。`);
+            location.reload(); // 状態を自分にも反映させる
+        }
+    } catch(e) {
+        alert("Workersとの通信に失敗しました。");
+    }
 }
 
 async function addContact() {
