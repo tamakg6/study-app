@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>chaT</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="chaT">
-    <link rel="apple-touch-icon" href="icon.jpg">
-    <link rel="stylesheet" href="style.css?v=30">
+    <title>chaT (Dev/Admin)</title>
+    <link rel="stylesheet" href="style.css?v=50">
 </head>
 <body>
+    <div id="maintenance-overlay" style="display: none;">
+        <div class="auth-card">
+            <h2>🛠 メンテナンス中</h2>
+            <p>現在、システムのメンテナンスを行っています。<br>終了までしばらくお待ちください。</p>
+            <p style="font-size: 0.7rem; color: #888; margin-top: 10px;">(管理者のみログイン可能です)</p>
+        </div>
+    </div>
+
     <div id="auth-overlay">
         <div class="auth-card">
             <h2 id="auth-title">chaT にログイン</h2>
@@ -36,7 +40,18 @@
                     <li onclick="selectChannel('general')" data-id="general"># general</li>
                 </ul>
                 <div class="sidebar-section">ダイレクトメッセージ</div>
+                <div id="dm-search-area">
+                    <input type="text" id="search-userid" placeholder="IDで検索...">
+                    <button onclick="addContact()">追加</button>
+                </div>
                 <ul id="user-list"></ul>
+
+                <div id="admin-menu" style="display:none;">
+                    <div class="sidebar-section">管理ツール</div>
+                    <ul id="admin-action-list">
+                        <li onclick="toggleMaintenanceMode()" style="color: #ff4d4f; font-weight: bold;">🛠 メンテナンス切替</li>
+                    </ul>
+                </div>
             </div>
             <div id="user-info-area">
                 <span id="user-display-name"></span>
@@ -57,6 +72,6 @@
         </main>
     </div>
     <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
-    <script src="app.js?v=30"></script>
+    <script src="app.js?v=50"></script>
 </body>
 </html>
