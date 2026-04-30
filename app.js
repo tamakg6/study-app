@@ -178,17 +178,37 @@ function selectChannel(id) {
 async function sendMessage() {
     const input = document.getElementById('message-input');
     const content = input.value.trim();
+    
+    // 中身が空なら何もしない
     if (!content) return;
+
+    // 送信ボタンを押した瞬間に、見た目上の入力を空にする
     input.value = "";
     input.style.height = 'auto';
-    const res = await fetch(`${API_URL}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_id: currentChannelId, sender_id: currentUser.user_id, content: content })
-    });
-    if (checkMaintenance(res.status)) return;
-    loadMessages(currentChannelId);
-}
 
+    try {
+        const res = await fetch(`${API_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                channel_id: currentChannelId, 
+                sender_id: currentUser.user_id, 
+                content: content 
+            })
+        });
+
+        if (res.ok) {
+            // 送信成功したらメッセージを再読み込みして表示
+            await loadMessages(currentChannelId);
+        } else if (res.status === 503) {
+            alert("現在メンテナンス中のため送信できません。");
+        } else {
+            alert("送信に失敗しました。");
+        }
+    } catch (e) {
+        console.error("Error:", e);
+        alert("通信エラーが発生しました。URLが正しいか確認してください。");
+    }
+}
 function logout() { localStorage.removeItem('chaT_user'); location.reload(); }
 window.onload = () => { if (currentUser) showApp(); };
