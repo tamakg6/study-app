@@ -1,9 +1,12 @@
 const API_URL = "https://cha-t.tama-kg-6.workers.dev";
 let currentUser = JSON.parse(localStorage.getItem('chaT_user')) || null;
 let currentChannelId = "general";
-let lastRenderedKey = {};  // チャンネルごとに最後に描画したデータのキャッシュ
+let lastRenderedKey = {};
+let lastSeenId = JSON.parse(localStorage.getItem('chaT_lastSeen') || '{}');
 let isSignUp = false;
-let contacts = currentUser ? (JSON.parse(localStorage.getItem(`chaT_contacts_${currentUser.user_id}`)) || []) : [];
+let contacts = currentUser
+    ? (JSON.parse(localStorage.getItem(`chaT_contacts_${currentUser.user_id}`)) || [])
+    : [];
 
 function toggleSidebar() { document.getElementById('app').classList.toggle('sidebar-open'); }
 
@@ -15,10 +18,10 @@ function toggleAuthMode() {
 }
 
 async function handleAuth() {
-    const user_id = document.getElementById('auth-userid').value;
+    const user_id = document.getElementById('auth-userid').value.trim();
     const password = document.getElementById('auth-password').value;
-    const display_name = document.getElementById('auth-displayname').value;
-    if(!user_id || !password) return alert("入力してください");
+    const display_name = document.getElementById('auth-displayname').value.trim();
+    if (!user_id || !password) return alert("入力してください");
     try {
         const res = await fetch(`${API_URL}${isSignUp ? "/register" : "/login"}`, {
             method: 'POST',
@@ -28,11 +31,11 @@ async function handleAuth() {
         const data = await res.json();
         if (res.ok) {
             if (isSignUp) { alert("完了！ログインしてください"); toggleAuthMode(); }
-            else { 
-                currentUser = data.user; 
-                localStorage.setItem('chaT_user', JSON.stringify(currentUser)); 
+            else {
+                currentUser = data.user;
+                localStorage.setItem('chaT_user', JSON.stringify(currentUser));
                 contacts = JSON.parse(localStorage.getItem(`chaT_contacts_${currentUser.user_id}`)) || [];
-                showApp(); 
+                showApp();
             }
         } else { alert(data.error); }
     } catch (e) { alert("通信エラー"); }
@@ -43,16 +46,20 @@ function showApp() {
     document.getElementById('app').style.display = "flex";
     document.getElementById('user-display-name').textContent = currentUser.display_name;
 
-    // ユーザーID表示（user-name-blockがあれば@IDも表示）
     const useridLabel = document.getElementById('user-userid-label');
     if (useridLabel) useridLabel.textContent = `@${currentUser.user_id}`;
 
-    if(currentUser.user_id === 'admin') {
+    if (currentUser.user_id === 'admin') {
         document.getElementById('admin-menu').style.display = 'block';
     }
 
+    registerServiceWorker();
+    requestNotificationPermission();
     renderUserList();
+
     setInterval(updatePolling, 3000);
+    setInterval(pollBadges, 10000);
+
     selectChannel('general');
 
     const tx = document.getElementById('message-input');
@@ -60,8 +67,6 @@ function showApp() {
         tx.style.height = 'auto';
         tx.style.height = tx.scrollHeight + 'px';
     });
-
-    // Enterで送信、Shift+Enterで改行
     tx.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -70,6 +75,98 @@ function showApp() {
     });
 }
 
+// ===========================
+// Service Worker
+// ===========================
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        await navigator.serviceWorker.register('/sw.js');
+    } catch (e) {
+        console.warn('[chaT] SW登録失敗:', e);
+    }
+}
+
+// ===========================
+// 通知
+// ===========================
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+    }
+}
+
+function showNotification(title, body) {
+    if (Notification.permission !== 'granted') return;
+    if (!document.hidden) return; // タブが見えているときは出さない
+    new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+        tag: 'chat-notification',
+        renotify: true,
+    });
+}
+
+// ===========================
+// 未読バッジ
+// ===========================
+function getWatchedChannels() {
+    const fixed = ['announcement', 'general'];
+    const dms = contacts.map(u => `dm_${[currentUser.user_id, u.user_id].sort().join('_')}`);
+    return [...fixed, ...dms];
+}
+
+function updateChannelBadge(channelId, hasUnread) {
+    const li = document.querySelector(`#sidebar li[data-id="${channelId}"]`);
+    if (!li) return;
+    const existing = li.querySelector('.badge');
+    if (existing) existing.remove();
+    if (hasUnread) {
+        const dot = document.createElement('span');
+        dot.className = 'badge';
+        li.appendChild(dot);
+    }
+}
+
+function markChannelRead(channelId, latestMsgId) {
+    if (!latestMsgId) return;
+    lastSeenId[channelId] = latestMsgId;
+    localStorage.setItem('chaT_lastSeen', JSON.stringify(lastSeenId));
+    updateChannelBadge(channelId, false);
+}
+
+async function pollBadges() {
+    const channels = getWatchedChannels();
+    if (!channels.length) return;
+    try {
+        const userParam = currentUser.user_id === 'admin' ? '&user=admin' : '';
+        const res = await fetch(`${API_URL}/channels/latest?channels=${channels.join(',')}${userParam}`);
+        if (!res.ok) return;
+        const latest = await res.json();
+
+        const unreadChannels = [];
+        channels.forEach(ch => {
+            if (ch === currentChannelId) return;
+            const latestId = latest[ch] || 0;
+            const seenId = lastSeenId[ch] || 0;
+            const hasUnread = latestId > seenId;
+            updateChannelBadge(ch, hasUnread);
+            if (hasUnread) unreadChannels.push(ch);
+        });
+
+        if (unreadChannels.length > 0) {
+            showNotification(
+                'chaT — 新しいメッセージ',
+                `${unreadChannels.length}件のチャンネルに未読メッセージがあります`
+            );
+        }
+    } catch (e) {}
+}
+
+// ===========================
+// メンテナンス
+// ===========================
 function checkMaintenance(status) {
     if (status === 503 && currentUser?.user_id !== 'admin') {
         document.getElementById('maintenance-overlay').style.display = 'flex';
@@ -82,31 +179,26 @@ function checkMaintenance(status) {
 async function toggleMaintenanceMode() {
     const choice = confirm("メンテナンスを【開始】しますか？\n（[キャンセル] を押すとメンテナンスを【解除】します）");
     const val = choice ? "true" : "false";
-
     try {
         const res = await fetch(`${API_URL}/admin/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                key: 'maintenance_mode', 
-                value: val, 
-                user_id: currentUser.user_id 
-            })
+            body: JSON.stringify({ key: 'maintenance_mode', value: val, user_id: currentUser.user_id })
         });
-        if(res.ok) {
+        if (res.ok) {
             alert(`メンテナンスを ${val === "true" ? 'ON' : 'OFF'} にしました。`);
             location.reload();
         }
-    } catch(e) {
-        alert("Workersとの通信に失敗しました。");
-    }
+    } catch (e) { alert("Workersとの通信に失敗しました。"); }
 }
 
+// ===========================
+// コンタクト / DM
+// ===========================
 async function addContact() {
     const targetId = document.getElementById('search-userid').value.trim();
     if (!targetId || targetId === currentUser.user_id) return;
     if (contacts.find(c => c.user_id === targetId)) return alert("すでに追加されています");
-
     try {
         const res = await fetch(`${API_URL}/users`);
         const users = await res.json();
@@ -128,26 +220,28 @@ function renderUserList() {
     }).join('');
 }
 
-// アクティブなチャンネルのハイライトを更新
+// ===========================
+// サイドバーのアクティブ表示
+// ===========================
 function updateActiveSidebarItem(channelId) {
     document.querySelectorAll('#sidebar li').forEach(el => {
         el.classList.toggle('active', el.dataset.id === channelId);
     });
 }
 
+// ===========================
+// メッセージ読み込み
+// ===========================
 async function updatePolling() {
     await loadMessages(currentChannelId);
 }
 
-// D1のUTC文字列 → JSTのDateオブジェクトに変換
 function parseJST(str) {
     if (!str) return null;
-    // "2025-01-01 12:00:00" → "2025-01-01T12:00:00Z" としてUTC解釈 → JST変換
     const utc = new Date(str.replace(' ', 'T') + 'Z');
     return isNaN(utc.getTime()) ? null : utc;
 }
 
-// JST表示用ヘルパー
 function formatTime(date) {
     if (!date) return "";
     return date.toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
@@ -170,7 +264,6 @@ async function loadMessages(channelId) {
 
         const data = await res.json();
 
-        // ★ 点滅防止：前回と内容が同じなら描画をスキップ
         const newKey = JSON.stringify(data.map(m => `${m.id}_${m.content}`));
         if (lastRenderedKey[channelId] === newKey) return;
         lastRenderedKey[channelId] = newKey;
@@ -193,7 +286,6 @@ async function loadMessages(channelId) {
                 ? delBtn
                 : `<span class="msg-user">${m.display_name || m.sender_id}</span>${delBtn}`;
 
-            // ★ 日付が変わったら区切り線を挿入
             let dateSeparator = '';
             if (dateKey && dateKey !== lastDateKey) {
                 dateSeparator = `<div class="date-separator"><span>${formatDate(date)}</span></div>`;
@@ -211,10 +303,13 @@ async function loadMessages(channelId) {
         msgDiv.innerHTML = html;
         if (isBottom) msgDiv.scrollTop = msgDiv.scrollHeight;
 
+        if (data.length > 0) {
+            markChannelRead(channelId, data[data.length - 1].id);
+        }
+
     } catch (e) {}
 }
 
-// XSS対策：HTMLエスケープ
 function escapeHtml(str) {
     return str
         .replace(/&/g, "&amp;")
@@ -224,7 +319,9 @@ function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
-// メッセージ削除（Workers側のDELETE APIを呼び出す）
+// ===========================
+// メッセージ削除
+// ===========================
 async function deleteMessage(id) {
     if (!confirm("削除しますか？")) return;
     try {
@@ -234,6 +331,7 @@ async function deleteMessage(id) {
             body: JSON.stringify({ user_id: currentUser.user_id })
         });
         if (res.ok) {
+            lastRenderedKey[currentChannelId] = null;
             await loadMessages(currentChannelId);
         } else {
             alert("削除に失敗しました。");
@@ -243,16 +341,24 @@ async function deleteMessage(id) {
     }
 }
 
+// ===========================
+// チャンネル選択
+// ===========================
 function selectChannel(id) {
     currentChannelId = id;
     const isAnnounce = (id === 'announcement');
     document.getElementById('display-channel-name').textContent = isAnnounce ? "📢 お知らせ" : `# ${id}`;
     document.getElementById('input-area').style.display = (isAnnounce && currentUser.user_id !== 'admin') ? 'none' : 'flex';
     updateActiveSidebarItem(id);
-    if(window.innerWidth <= 768) document.getElementById('app').classList.remove('sidebar-open');
+    updateChannelBadge(id, false);
+    if (window.innerWidth <= 768) document.getElementById('app').classList.remove('sidebar-open');
+    lastRenderedKey[id] = null;
     loadMessages(id);
 }
 
+// ===========================
+// メッセージ送信
+// ===========================
 async function sendMessage() {
     const input = document.getElementById('message-input');
     const content = input.value.trim();
@@ -265,14 +371,15 @@ async function sendMessage() {
         const res = await fetch(`${API_URL}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                channel_id: currentChannelId, 
-                sender_id: currentUser.user_id, 
-                content: content 
+            body: JSON.stringify({
+                channel_id: currentChannelId,
+                sender_id: currentUser.user_id,
+                content: content
             })
         });
 
         if (res.ok) {
+            lastRenderedKey[currentChannelId] = null;
             await loadMessages(currentChannelId);
         } else if (res.status === 503) {
             alert("現在メンテナンス中のため送信できません。");
