@@ -1,176 +1,492 @@
-/* --- 変数・全体設定 --- */
-:root { 
-    --primary: #4a90e2; 
-    --border: #eee; 
-    --bg-sidebar: #f8f9fa;
-    --bg-msg: #f1f3f4;
+/* --- Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600&display=swap');
+
+/* --- 変数 --- */
+:root {
+    --accent: #5b8dee;
+    --accent-dark: #4a7cdc;
+    --own-bubble: #5b8dee;
+    --own-bubble-text: #fff;
+    --other-bubble: #f0f2f5;
+    --other-bubble-text: #1a1a2e;
+    --sidebar-bg: #fafafa;
+    --sidebar-border: #ebebeb;
+    --header-bg: #fff;
+    --body-bg: #fff;
+    --text-primary: #1a1a2e;
+    --text-muted: #9a9aaa;
+    --input-bg: #f0f2f5;
+    --radius-bubble: 18px;
+    --font: 'Noto Sans JP', -apple-system, sans-serif;
 }
 
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    -webkit-tap-highlight-color: transparent; 
+/* --- リセット --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
-body, html { 
-    height: 100%; 
-    width: 100%; 
-    overflow: hidden; 
-    font-family: -apple-system, sans-serif; 
-    background: #fff; 
+body, html {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: var(--font);
+    background: var(--body-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
 }
 
-#app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-
-/* --- サイドバー --- */
-#sidebar { 
-    width: 260px; 
-    background: var(--bg-sidebar); 
-    border-right: 1px solid var(--border); 
-    display: flex; 
-    flex-direction: column; 
-    transition: transform 0.3s ease; 
-    z-index: 2000; 
+/* --- アプリ全体 --- */
+#app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
 }
 
-.server-name { padding: 18px; font-weight: bold; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); }
-.sidebar-scroll { flex: 1; overflow-y: auto; }
-.sidebar-section { padding: 15px 15px 5px; font-size: 0.7rem; color: #888; font-weight: bold; }
-
-#sidebar li { 
-    padding: 8px 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    margin: 2px 10px; 
-    font-size: 0.9rem; 
-    display: flex; 
-    justify-content: space-between; 
-}
-#sidebar li:hover { background: #eef2f7; }
-
-/* --- メインチャットエリア --- */
-#chat-container { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    min-width: 0; 
-    background: white; 
+/* ===========================
+   サイドバー
+=========================== */
+#sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    z-index: 2000;
 }
 
-#main-header { 
-    height: 60px; 
-    display: flex; 
-    align-items: center; 
-    padding: 0 15px; 
-    border-bottom: 1px solid var(--border); 
+.server-name {
+    padding: 20px 18px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
 }
 
-/* --- メッセージ吹き出し（ここが重要！） --- */
-#messages { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 12px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; /* メッセージ同士の間隔をスリムに */
+.sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
 }
 
-.msg-item { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: flex-start; /* 左寄せ */
+.sidebar-scroll::-webkit-scrollbar { width: 0; }
+
+.sidebar-section {
+    padding: 16px 18px 6px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
 }
 
-.msg-header { 
-    font-size: 0.75rem; 
-    font-weight: bold; 
-    color: #555; 
-    margin-bottom: 2px; 
-    padding-left: 5px;
+#sidebar ul {
+    list-style: none;
+    padding: 0 8px;
 }
 
-.msg-content { 
-    background: var(--bg-msg); 
-    padding: 6px 14px; /* 上下の余白を削ってスッキリ */
-    border-radius: 16px; 
-    
-    /* ★重要：枠をシュッとさせる設定 */
-    width: fit-content;  /* 文字の長さに枠を合わせる */
-    max-width: 65%;      /* 画面の半分ちょっとで止める */
-    
-    word-break: break-all;
-    white-space: pre-wrap; 
-    font-size: 0.95rem; 
-    line-height: 1.4;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+#sidebar li {
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+    margin: 1px 0;
 }
 
-.msg-footer { 
-    font-size: 0.6rem; 
-    color: #aaa; 
-    margin-top: 2px; 
-    margin-left: 8px;
+#sidebar li:hover { background: #eef0f5; }
+#sidebar li.active {
+    background: #e8edfc;
+    color: var(--accent);
+    font-weight: 500;
 }
 
-/* --- 入力エリア --- */
-#input-area { 
-    padding: 10px 12px; 
-    border-top: 1px solid var(--border); 
-    display: flex; 
-    align-items: flex-end; 
-    gap: 10px; 
+/* DM検索エリア */
+#dm-search-area {
+    display: flex;
+    gap: 6px;
+    padding: 4px 8px 8px;
 }
 
-#message-input { 
-    flex: 1; 
-    padding: 8px 15px; 
-    border-radius: 20px; 
-    border: 1px solid var(--border); 
-    background: #f1f3f4; 
-    font-size: 15px; /* iOSのズーム防止 */
-    outline: none; 
-    resize: none; 
-    max-height: 100px; 
-    line-height: 1.4; 
+#dm-search-area input {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--sidebar-border);
+    background: var(--input-bg);
+    font-size: 0.8rem;
+    font-family: var(--font);
+    outline: none;
+    color: var(--text-primary);
 }
 
-#send-btn { 
-    width: 38px; 
-    height: 38px; 
-    border-radius: 50%; 
-    background: var(--primary); 
-    color: white; 
-    border: none; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
+#dm-search-area button {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.78rem;
+    font-family: var(--font);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s;
 }
 
-/* --- メンテナンス・認証画面 --- */
-#maintenance-overlay, #auth-overlay {
-    position: fixed; inset: 0; 
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999; 
-}
-#maintenance-overlay { background: rgba(0,0,0,0.85); color: white; }
-#auth-overlay { background: #f0f2f5; }
+#dm-search-area button:hover { background: var(--accent-dark); }
 
-.auth-card { 
-    background: white; padding: 25px; border-radius: 16px; 
-    width: 90%; max-width: 320px; 
-    display: flex; flex-direction: column; gap: 10px; 
-    color: #333;
+/* ユーザー情報 */
+#user-info-area {
+    padding: 12px 14px;
+    border-top: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 
-/* --- レスポンシブ --- */
+#user-display-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#user-info-area button {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--sidebar-border);
+    background: transparent;
+    font-size: 0.75rem;
+    font-family: var(--font);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#user-info-area button:hover {
+    background: #f0f0f0;
+    color: var(--text-primary);
+}
+
+/* 管理メニュー */
+#admin-action-list li {
+    color: #e05252 !important;
+    font-weight: 500 !important;
+}
+
+/* ===========================
+   メインチャットエリア
+=========================== */
+#chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--body-bg);
+}
+
+/* ヘッダー */
+#main-header {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    background: var(--header-bg);
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+#menu-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    display: none;
+    line-height: 1;
+}
+
+#display-channel-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+}
+
+/* ===========================
+   メッセージエリア
+=========================== */
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#messages::-webkit-scrollbar { width: 4px; }
+#messages::-webkit-scrollbar-track { background: transparent; }
+#messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+/* --- メッセージ共通 --- */
+.msg-item {
+    display: flex;
+    flex-direction: column;
+    max-width: 72%;
+    animation: fadeUp 0.18s ease;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 相手のメッセージ（左） */
+.msg-item.other { align-self: flex-start; align-items: flex-start; }
+
+/* 自分のメッセージ（右） */
+.msg-item.mine  { align-self: flex-end;   align-items: flex-end; }
+
+.msg-header {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.delete-btn {
+    cursor: pointer;
+    color: #ccc;
+    font-size: 0.85rem;
+    transition: color 0.15s;
+    line-height: 1;
+}
+.delete-btn:hover { color: #e05252; }
+
+.msg-content {
+    padding: 8px 14px;
+    border-radius: var(--radius-bubble);
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    width: fit-content;
+    max-width: 100%;
+    position: relative;
+}
+
+/* 相手の吹き出し */
+.msg-item.other .msg-content {
+    background: var(--other-bubble);
+    color: var(--other-bubble-text);
+    border-top-left-radius: 4px;
+}
+
+/* 自分の吹き出し */
+.msg-item.mine .msg-content {
+    background: var(--own-bubble);
+    color: var(--own-bubble-text);
+    border-top-right-radius: 4px;
+}
+
+.msg-footer {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    padding: 0 4px;
+}
+
+/* ===========================
+   入力エリア
+=========================== */
+#input-area {
+    padding: 10px 12px;
+    border-top: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: var(--body-bg);
+    flex-shrink: 0;
+}
+
+#message-input {
+    flex: 1;
+    padding: 9px 15px;
+    border-radius: 22px;
+    border: 1px solid var(--sidebar-border);
+    background: var(--input-bg);
+    font-size: 15px;
+    font-family: var(--font);
+    outline: none;
+    resize: none;
+    max-height: 120px;
+    line-height: 1.45;
+    color: var(--text-primary);
+    transition: border-color 0.15s;
+}
+
+#message-input:focus {
+    border-color: var(--accent);
+}
+
+#message-input::placeholder { color: var(--text-muted); }
+
+#send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+}
+
+#send-btn:hover { background: var(--accent-dark); }
+#send-btn:active { transform: scale(0.94); }
+
+/* ===========================
+   ログイン・メンテナンス画面
+=========================== */
+#maintenance-overlay,
+#auth-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#maintenance-overlay {
+    background: rgba(10, 10, 20, 0.88);
+    backdrop-filter: blur(6px);
+    color: white;
+}
+
+#auth-overlay {
+    background: #f5f6fa;
+}
+
+.auth-card {
+    background: white;
+    padding: 36px 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+}
+
+.auth-card h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+    margin-bottom: 4px;
+}
+
+.auth-card input {
+    padding: 11px 15px;
+    border-radius: 12px;
+    border: 1px solid var(--sidebar-border);
+    background: var(--input-bg);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    outline: none;
+    color: var(--text-primary);
+    transition: border-color 0.15s;
+}
+
+.auth-card input:focus { border-color: var(--accent); }
+.auth-card input::placeholder { color: var(--text-muted); }
+
+.auth-card button {
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 0.9rem;
+    font-family: var(--font);
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, transform 0.1s;
+    margin-top: 4px;
+}
+
+.auth-card button:hover { background: var(--accent-dark); }
+.auth-card button:active { transform: scale(0.98); }
+
+.auth-card p {
+    font-size: 0.78rem;
+    color: var(--accent);
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.auth-card p:hover { text-decoration: underline; }
+
+/* ===========================
+   レスポンシブ
+=========================== */
 @media (max-width: 768px) {
-    #sidebar { position: fixed; transform: translateX(-100%); }
-    #app.sidebar-open #sidebar { transform: translateX(0); }
-    #sidebar-overlay { 
-        display: none; position: fixed; inset: 0; 
-        background: rgba(0,0,0,0.4); z-index: 1500; 
+    #menu-btn { display: block; }
+
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        transform: translateX(-100%);
     }
+
+    #app.sidebar-open #sidebar { transform: translateX(0); }
+
+    #sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.35);
+        z-index: 1500;
+        backdrop-filter: blur(2px);
+    }
+
     #app.sidebar-open #sidebar-overlay { display: block; }
+
+    .msg-item { max-width: 85%; }
 }
