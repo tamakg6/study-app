@@ -43,6 +43,10 @@ function showApp() {
     document.getElementById('app').style.display = "flex";
     document.getElementById('user-display-name').textContent = currentUser.display_name;
 
+    // ユーザーID表示（user-name-blockがあれば@IDも表示）
+    const useridLabel = document.getElementById('user-userid-label');
+    if (useridLabel) useridLabel.textContent = `@${currentUser.user_id}`;
+
     if(currentUser.user_id === 'admin') {
         document.getElementById('admin-menu').style.display = 'block';
     }
