@@ -1,7 +1,7 @@
 const API_URL = "https://cha-t.tama-kg-6.workers.dev";
 let currentUser = JSON.parse(localStorage.getItem('chaT_user')) || null;
 let currentChannelId = "general";
-let lastMsgCounts = {}; 
+let lastRenderedKey = {};  // チャンネルごとに最後に描画したデータのキャッシュ
 let isSignUp = false;
 let contacts = currentUser ? (JSON.parse(localStorage.getItem(`chaT_contacts_${currentUser.user_id}`)) || []) : [];
 
@@ -135,43 +135,78 @@ async function updatePolling() {
     await loadMessages(currentChannelId);
 }
 
+// D1のUTC文字列 → JSTのDateオブジェクトに変換
+function parseJST(str) {
+    if (!str) return null;
+    // "2025-01-01 12:00:00" → "2025-01-01T12:00:00Z" としてUTC解釈 → JST変換
+    const utc = new Date(str.replace(' ', 'T') + 'Z');
+    return isNaN(utc.getTime()) ? null : utc;
+}
+
+// JST表示用ヘルパー
+function formatTime(date) {
+    if (!date) return "";
+    return date.toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(date) {
+    if (!date) return "";
+    return date.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+}
+
+function formatDateKey(date) {
+    if (!date) return "";
+    return date.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+}
+
 async function loadMessages(channelId) {
     try {
         const res = await fetch(`${API_URL}/messages?channel=${channelId}`);
         if (checkMaintenance(res.status)) return;
-        
+
         const data = await res.json();
+
+        // ★ 点滅防止：前回と内容が同じなら描画をスキップ
+        const newKey = JSON.stringify(data.map(m => `${m.id}_${m.content}`));
+        if (lastRenderedKey[channelId] === newKey) return;
+        lastRenderedKey[channelId] = newKey;
+
         const msgDiv = document.getElementById('messages');
-        
-        if (channelId === currentChannelId) {
-            const isBottom = msgDiv.scrollHeight - msgDiv.scrollTop <= msgDiv.clientHeight + 100;
+        if (channelId !== currentChannelId) return;
 
-            msgDiv.innerHTML = data.map(m => {
-                const isMine = m.sender_id === currentUser.user_id;
-                const date = new Date(m.created_at);
-                const timeStr = isNaN(date.getTime()) ? "" : `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-                const canDelete = isMine || currentUser.user_id === 'admin';
-                const delBtn = canDelete ? `<span class="delete-btn" onclick="deleteMessage(${m.id})" title="削除">×</span>` : "";
+        const isBottom = msgDiv.scrollHeight - msgDiv.scrollTop <= msgDiv.clientHeight + 100;
 
-                // 自分のメッセージは mine クラス、相手は other クラス
-                const sideClass = isMine ? 'mine' : 'other';
+        let lastDateKey = null;
+        const html = data.map(m => {
+            const isMine = m.sender_id === currentUser.user_id;
+            const date = parseJST(m.created_at);
+            const timeStr = formatTime(date);
+            const dateKey = formatDateKey(date);
+            const canDelete = isMine || currentUser.user_id === 'admin';
+            const delBtn = canDelete ? `<span class="delete-btn" onclick="deleteMessage(${m.id})" title="削除">×</span>` : "";
+            const sideClass = isMine ? 'mine' : 'other';
+            const headerContent = isMine
+                ? delBtn
+                : `<span class="msg-user">${m.display_name || m.sender_id}</span>${delBtn}`;
 
-                // 自分のメッセージはヘッダーに名前を出さない（LINEスタイル）
-                const headerContent = isMine
-                    ? delBtn
-                    : `<span class="msg-user">${m.display_name || m.sender_id}</span>${delBtn}`;
+            // ★ 日付が変わったら区切り線を挿入
+            let dateSeparator = '';
+            if (dateKey && dateKey !== lastDateKey) {
+                dateSeparator = `<div class="date-separator"><span>${formatDate(date)}</span></div>`;
+                lastDateKey = dateKey;
+            }
 
-                return `
-                    <div class="msg-item ${sideClass}">
-                        <div class="msg-header">${headerContent}</div>
-                        <div class="msg-content">${escapeHtml(m.content)}</div>
-                        <div class="msg-footer">${timeStr}</div>
-                    </div>
-                `;
-            }).join('');
+            return `${dateSeparator}
+                <div class="msg-item ${sideClass}">
+                    <div class="msg-header">${headerContent}</div>
+                    <div class="msg-content">${escapeHtml(m.content)}</div>
+                    <div class="msg-footer">${timeStr}</div>
+                </div>`;
+        }).join('');
 
-            if(isBottom) msgDiv.scrollTop = msgDiv.scrollHeight;
-        }
+        msgDiv.innerHTML = html;
+        if (isBottom) msgDiv.scrollTop = msgDiv.scrollHeight;
+
     } catch (e) {}
 }
 
